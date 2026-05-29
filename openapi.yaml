@@ -1,0 +1,425 @@
+openapi: 3.0.3
+info:
+  title: Depureco Industrial Vacuum MCP API
+  description: |
+    Remote MCP (Model Context Protocol) server for industrial vacuum cleaner configuration.
+
+    Enables AI assistants to find and configure the right industrial vacuum for any application:
+    combustible dust in ATEX Zone 21 or 22, CNC oil extraction, welding fume removal, food-grade
+    and pharmaceutical environments, additive manufacturing post-processing, and more.
+
+    This is a WebMCP (Remote MCP over HTTP) endpoint compatible with the Model Context Protocol
+    specification by Anthropic. No installation or authentication required.
+  version: "1.0.0"
+  contact:
+    name: Depureco Industrial Vacuums
+    url: https://depureco.com
+    email: depureco@depureco.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: https://depureco.com/terms
+
+servers:
+  - url: https://depureco.com/wp-json/depureco/v1
+    description: Production server
+
+tags:
+  - name: workflow
+    description: Core workflow tools (recommended order of use)
+  - name: lookup
+    description: Single-filter lookup tools for discovering criteria values
+
+paths:
+  /mcp:
+    post:
+      summary: MCP Tool Endpoint
+      description: |
+        Single endpoint for all MCP tool calls. Send a JSON body with the tool name and parameters.
+        See the available tools below for specific schemas.
+      operationId: callMcpTool
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/GetAssistantInstructionsRequest'
+                - $ref: '#/components/schemas/GetFilterOptionsRequest'
+                - $ref: '#/components/schemas/ConfigureProductRequest'
+                - $ref: '#/components/schemas/GetProductDataRequest'
+                - $ref: '#/components/schemas/GetTechnicalSpecsRequest'
+                - $ref: '#/components/schemas/GetProductAccessoriesRequest'
+                - $ref: '#/components/schemas/LookupRequest'
+            examples:
+              configureForAtex:
+                summary: Find ATEX Zone 22 vacuums for combustible dust
+                value:
+                  tool: configureProduct
+                  params:
+                    application: combustible-dust
+                    zoneType: zone-22
+                    certificate: atex
+                    usage: continuous
+                    limit: 5
+              getProductFullData:
+                summary: Get complete product sheet
+                value:
+                  tool: getProductData
+                  productId: PUMA ACD
+              getTechnicalSpecs:
+                summary: Get precise technical data
+                value:
+                  tool: getTechnicalSpecs
+                  productId: PUMA DEX 1/3D
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/McpResponse'
+        '400':
+          description: Bad request — invalid tool name or parameters
+        '404':
+          description: Product or filter value not found
+        '500':
+          description: Server error
+
+components:
+  schemas:
+    GetAssistantInstructionsRequest:
+      type: object
+      required: [tool]
+      properties:
+        tool:
+          type: string
+          enum: [getAssistantInstructions]
+          description: Operational guidelines for the AI. Call first.
+
+    GetFilterOptionsRequest:
+      type: object
+      required: [tool]
+      properties:
+        tool:
+          type: string
+          enum: [getFilterOptions]
+          description: All available product search criteria. Call before configureProduct.
+        params:
+          type: object
+          properties:
+            search:
+              type: string
+              description: Optional text filter
+            includeEmpty:
+              type: boolean
+              default: false
+              description: Include terms with no published products
+
+    ConfigureProductRequest:
+      type: object
+      required: [tool]
+      properties:
+        tool:
+          type: string
+          enum: [configureProduct]
+          description: Find products matching a need
+        params:
+          type: object
+          properties:
+            application:
+              type: string
+              description: Material/application slug from getApplications
+              example: combustible-dust
+            sector:
+              type: string
+              description: Industrial sector slug from getSectors
+              example: food-industry
+            productCategory:
+              type: string
+              description: Product safety category slug from getProductCategories
+              enum: [1-2d, 1-3d, 3gd, 3d, acd, 3-3g, 1-3d-1-2d]
+            productType:
+              type: string
+              description: Product type slug from getProductTypes
+            powerSupply:
+              type: string
+              description: Power supply slug from getPowerSupplies
+              enum: [electric, battery, compressed-air]
+            motorPower:
+              type: string
+              description: Motor power value from getMotorPowerValues
+            power:
+              type: string
+              description: Total power value from getPowerValues
+            collectionCapacity:
+              type: string
+              description: Collection capacity slug from getCollectionCapacities
+              enum: [20-50-lt, 51-100-lt, 101-300-lt, 300-lt]
+            collectionSystem:
+              type: string
+              description: Collection system slug from getCollectionSystems
+            filterCleaningSystem:
+              type: string
+              description: Filter cleaning system slug from getFilterCleaningSystems
+            structure:
+              type: string
+              description: Structure slug from getStructures
+              enum: [mobile, fixed]
+            usage:
+              type: string
+              description: Usage mode slug from getUsages
+              enum: [occasional, continuous]
+            zoneType:
+              type: string
+              description: ATEX zone slug from getZoneTypes
+              enum: [zone-22, zone-21, zone-2, ordinary]
+            certificate:
+              type: string
+              description: Certificate slug from getCertificates
+              enum: [ce, atex, type-h-dust]
+            limit:
+              type: integer
+              minimum: 1
+              maximum: 25
+              default: 10
+              description: Maximum results to return
+
+    GetProductDataRequest:
+      type: object
+      required: [tool, productId]
+      properties:
+        tool:
+          type: string
+          enum: [getProductData]
+        productId:
+          type: string
+          description: Product numeric ID, exact title, or slug. Title preferred.
+          example: PUMA ACD
+
+    GetTechnicalSpecsRequest:
+      type: object
+      required: [tool, productId]
+      properties:
+        tool:
+          type: string
+          enum: [getTechnicalSpecs]
+        productId:
+          type: string
+          description: Product numeric ID, exact title, or slug. Title preferred.
+          example: PUMA DEX 1/3D
+
+    GetProductAccessoriesRequest:
+      type: object
+      required: [tool, productId]
+      properties:
+        tool:
+          type: string
+          enum: [getProductAccessories]
+        productId:
+          type: string
+          description: Product numeric ID, exact title, or slug. Title preferred.
+          example: ECOBULL ACD
+
+    LookupRequest:
+      type: object
+      required: [tool]
+      properties:
+        tool:
+          type: string
+          enum:
+            - getApplications
+            - getSectors
+            - getProductCategories
+            - getProductTypes
+            - getPowerSupplies
+            - getPowerValues
+            - getMotorPowerValues
+            - getCollectionCapacities
+            - getCollectionSystems
+            - getFilterCleaningSystems
+            - getStructures
+            - getUsages
+            - getZoneTypes
+            - getCertificates
+        params:
+          type: object
+          properties:
+            search:
+              type: string
+              description: Optional text filter
+            includeEmpty:
+              type: boolean
+              default: false
+
+    McpResponse:
+      type: object
+      properties:
+        total:
+          type: integer
+        count:
+          type: integer
+        products:
+          type: array
+          items:
+            $ref: '#/components/schemas/Product'
+
+    Product:
+      type: object
+      properties:
+        product_id:
+          type: integer
+        slug:
+          type: string
+        title:
+          type: string
+        type:
+          type: string
+        description:
+          type: string
+        image:
+          type: string
+          format: uri
+        urls:
+          $ref: '#/components/schemas/MultilingualUrls'
+        technicalSpecs:
+          $ref: '#/components/schemas/TechnicalSpecs'
+        highlights:
+          type: array
+          items:
+            $ref: '#/components/schemas/Highlight'
+        features:
+          type: array
+          items:
+            $ref: '#/components/schemas/Feature'
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/Option'
+        accessories:
+          type: array
+          items:
+            $ref: '#/components/schemas/Accessory'
+        manuals:
+          $ref: '#/components/schemas/MultilingualDocuments'
+        brochures:
+          $ref: '#/components/schemas/MultilingualDocuments'
+
+    MultilingualUrls:
+      type: object
+      properties:
+        it: { type: string, format: uri }
+        en: { type: string, format: uri }
+        de: { type: string, format: uri }
+        fr: { type: string, format: uri }
+        es: { type: string, format: uri }
+        ro: { type: string, format: uri }
+
+    MultilingualDocuments:
+      type: object
+      properties:
+        it: { type: string, format: uri }
+        en: { type: string, format: uri }
+        de: { type: string, format: uri }
+        fr: { type: string, format: uri }
+        es: { type: string, format: uri }
+        ro: { type: string, format: uri }
+
+    TechnicalSpecs:
+      type: object
+      properties:
+        motorPowerKwHp:
+          type: string
+          example: "7.5 kW / 10 HP"
+        airflowM3h:
+          type: string
+          example: "700"
+        continuousVacuumMbar:
+          type: string
+          example: "280"
+        motorVoltageV:
+          type: string
+          example: "400"
+        motorFrequencyHz:
+          type: string
+          example: "50/60"
+        noiseLevelDba:
+          type: string
+          example: "74"
+        primaryFilterAreaCm2:
+          type: string
+          example: "45000"
+        containerCapacityLt:
+          type: string
+          example: "175"
+        dimensionsMm:
+          type: string
+          example: "850 x 1550"
+        heightMm:
+          type: string
+          example: "1980"
+        weightKg:
+          type: string
+          example: "295"
+        suctionInletMm:
+          type: string
+          example: "100"
+        atexMarking:
+          type: string
+          example: "II 1/3D Ex h IIIC T140°C Da/Dc"
+        operatingTemperature:
+          type: string
+          example: "-10 / +40"
+        powerSupply:
+          type: string
+          example: "Electric"
+
+    Highlight:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        image:
+          type: string
+          format: uri
+
+    Feature:
+      type: object
+      properties:
+        code:
+          type: string
+        label:
+          type: string
+        description:
+          type: string
+        image:
+          type: string
+          format: uri
+
+    Option:
+      type: object
+      properties:
+        code:
+          type: string
+        label:
+          type: string
+        description:
+          type: string
+        image:
+          type: string
+          format: uri
+
+    Accessory:
+      type: object
+      properties:
+        name:
+          type: string
+        code:
+          type: string
+        description:
+          type: string
+        image:
+          type: string
+          format: uri

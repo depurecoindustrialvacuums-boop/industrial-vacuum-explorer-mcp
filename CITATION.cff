@@ -1,0 +1,35 @@
+cff-version: 1.2.0
+title: "Depureco Industrial Vacuum MCP Server"
+message: "If you use this MCP server in academic or technical work, please cite it."
+type: software
+authors:
+  - name: "Depureco Industrial Vacuums"
+    email: "depureco@depureco.com"
+    website: "https://depureco.com"
+    city: "Turin"
+    country: "IT"
+repository-code: "https://github.com/depurecoindustrialvacuums-boop/industrial-vacuum-explorer-mcp"
+url: "https://depureco.com/wp-json/depureco/v1/mcp"
+abstract: >
+  The first Remote MCP (Model Context Protocol) Server for industrial vacuum
+  cleaner configuration. Enables AI assistants to query 150+ products across
+  24 industrial sectors with full ATEX certification data, technical
+  specifications, and accessory compatibility for safety-critical industrial
+  applications.
+keywords:
+  - model-context-protocol
+  - mcp
+  - webmcp
+  - remote-mcp
+  - industrial-vacuum
+  - atex
+  - manufacturing
+  - ai-tools
+  - llm-tools
+  - claude-mcp
+  - safety-critical-ai
+  - industrial-iot
+  - product-configurator
+license: MIT
+version: 1.0.0
+date-released: "2025-01-01"
